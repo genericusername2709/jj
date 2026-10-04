@@ -7,7 +7,7 @@ These are the config settings available to jj/Jujutsu.
 `jj` loads several types of config settings:
 
 - The built-in settings. These cannot be edited. They can be viewed in the
-  [`cli/src/config/`] directory in `jj`'s source repo.
+  [`cli/src/config/`][config dir] directory in `jj`'s source repo.
 
 - The user settings. These can be edited with `jj config edit --user`. User
   settings are located in [the user config files], which can be found with
@@ -20,6 +20,9 @@ These are the config settings available to jj/Jujutsu.
 - The workspace settings. These can be edited with `jj config edit --workspace`,
   or found with `jj config path --workspace`. For security reasons, they are not
   located inside the workspace.
+
+- Settings from [environment variable overrides](#environment-variable-overrides)
+  (for example `$JJ_USER` / `$JJ_EMAIL`).
 
 - Settings [specified on the command-line].
 
@@ -40,7 +43,7 @@ syntax. We cover some of the basics below.
 The first thing to remember is that the value of a setting (the part to the
 right of the `=` sign) should be surrounded in quotes if it's a string.
 
-[`cli/src/config/`]: https://github.com/jj-vcs/jj/blob/main/cli/src/config/
+[config dir]: https://github.com/jj-vcs/jj/blob/main/cli/src/config/
 [JSON Schema Support]: #json-schema-support
 [specified on the command-line]: #specifying-config-on-the-command-line
 [syntax guide]: https://toml.io/en/latest
@@ -135,6 +138,20 @@ email = "YOUR_EMAIL@example.com"
 
 Don't forget to change these to your own details!
 
+These can also be set with environment variables (handy with tools like
+[direnv](https://direenv.net/)):
+
+```bash
+export JJ_USER="Your Name"
+export JJ_EMAIL="you@example.com"
+```
+
+`$JJ_USER` overrides `user.name` and `$JJ_EMAIL` overrides `user.email`. They
+take precedence over values in config files (but not over `--config` /
+`--config-file`). See [Environment variable overrides](#environment-variable-overrides)
+for the full list. For directory-based switching without env vars, use
+[conditional variables](#conditional-variables).
+
 ## UI settings
 
 ### Colorizing output
@@ -218,9 +235,10 @@ commit_id = "green"
 Parts of the style that are not overridden - such as the foreground color in the
 example above - are inherited from the style of the parent label.
 
-Which elements can be colored is not yet documented, but see
-the [default color configuration](https://github.com/jj-vcs/jj/blob/main/cli/src/config/colors.toml)
-for some examples of what's possible.
+Which elements can be colored is not yet documented, but see the
+[default color configuration][colors.toml] for some examples of what's possible.
+
+[colors.toml]: https://github.com/jj-vcs/jj/blob/main/cli/src/config/colors.toml
 
 ### Default command
 
@@ -2408,6 +2426,27 @@ Here are some popular editors with TOML schema validation support:
 - Emacs
   - Install [lsp-mode](https://github.com/emacs-lsp/lsp-mode) and [toml-mode](https://github.com/dryman/toml-mode.el)
   - Configure [taplo](https://github.com/tamasfe/taplo) as the LSP server
+
+### Environment variable overrides
+
+Besides `$JJ_CONFIG` (which controls [where user config files are loaded
+from](#user-config-files)), these environment variables override individual
+config keys. They take precedence over config files and are themselves
+overridden by `--config` / `--config-file`.
+
+| Variable          | Config key          |
+| :---------------- | :------------------ |
+| `$JJ_USER`        | `user.name`         |
+| `$JJ_EMAIL`       | `user.email`        |
+| `$JJ_EDITOR`      | `ui.editor`         |
+| `$JJ_PAGER`       | `ui.pager`          |
+| `$JJ_OP_HOSTNAME` | `operation.hostname` |
+| `$JJ_OP_USERNAME` | `operation.username` |
+
+A few other variables act as fallbacks when no matching config is set (for
+example `$VISUAL` / `$EDITOR` for the editor, and `$NO_COLOR` for color), rather
+than hard overrides of configured values. See [Editor](#editor) and
+[Colorizing output](#colorizing-output).
 
 ### Specifying config on the command-line
 

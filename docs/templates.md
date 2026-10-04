@@ -9,20 +9,19 @@ A couple of `jj` commands accept a template via `-T`/`--template` option.
 ## Keywords
 
 Keywords represent objects of different types; the types are described in
-a follow-up section. In addition to context-specific keywords, the top-level
-object can be referenced as `self`.
+the following sections. The top-level object for a template can always be
+referenced as `self`. Its concrete type depends on the command (and is
+documented on each command's `--template` help).
 
-### Commit keywords
+In any template, all 0-argument methods of that top-level `self` type are
+available as keywords. For example:
 
-In `jj log` templates, all 0-argument methods of [the `Commit`
-type](#commit-type) are available as keywords. For example, `commit_id` is
-equivalent to `self.commit_id()`.
-
-### Operation keywords
-
-In `jj op log` templates, all 0-argument methods of [the `Operation`
-type](#operation-type) are available as keywords. For example,
-`current_operation` is equivalent to `self.current_operation()`.
+* In `jj log`, `self` is [the `Commit` type](#commit-type), so `commit_id` is
+  equivalent to `self.commit_id()`.
+* In `jj op log`, `self` is [the `Operation` type](#operation-type), so
+  `current_operation` is equivalent to `self.current_operation()`.
+* In `jj file list`, `self` is [the `TreeEntry` type](#treeentry-type), so
+  `path` is equivalent to `self.path()`.
 
 ## Operators
 
@@ -470,10 +469,9 @@ defined.
   the predicate `expression`. Example: `parents.any(|c| c.description().contains("fix"))`
 * `.all(|item| expression) -> Boolean`: Returns true if all elements satisfy
   the predicate `expression`. Example: `parents.all(|c| c.mine())`
-* `.first() -> T`: Returns the first element. Errors if the list is empty.
-* `.last() -> T`: Returns the last element. Errors if the list is empty.
-* `.get(index: Integer) -> T`: Returns the element at `index` (0-based). Errors
-  if the index is out of bounds.
+* `.first() -> Option<T>`: Returns the first element.
+* `.last() -> Option<T>`: Returns the last element.
+* `.get(index: Integer) -> Option<T>`: Returns the element at `index` (0-based).
 * `.reverse() -> List`: Returns the list in reverse order.
 * `.skip(count: Integer) -> List`: Skips the first `count` elements and
   returns the rest.
@@ -523,6 +521,11 @@ invoked. If not set, an error will be reported inline on method call.
 
 On comparison between two optional values or optional and non-optional values,
 unset value is not an error. Unset value is considered less than any set values.
+
+Types convertible to `Boolean` (e.g. `String` and `List`) lack support for
+`Option` because the truthy conversion of an unset value would conflict with
+it. Instead, unset values of these types are converted to their empty
+equivalents.
 
 ### `RefSymbol` type
 
@@ -634,7 +637,7 @@ following methods are defined.
   of a UTF-8 codepoint, the codepoint is fully part of the result. If the `end`
   index is in the middle of a UTF-8 codepoint, the codepoint is not part of the
   result. If `end` is not given, returns from `start` to the end of the string.
-* `.first_line() -> String`
+* `.first_line() -> String`: Equivalent to `.lines().first()`.
 * `.lines() -> List<String>`: Split into lines excluding newline characters.
 * `.split(separator: StringPattern, [limit: Integer]) -> List<String>`: Split
   into substrings by the given `separator` pattern. If `limit` is specified, it
@@ -820,11 +823,10 @@ The following methods are defined.
 * `.name() -> RefSymbol`: Returns the workspace name as a symbol.
 * `.target() -> Commit`: Returns the working-copy commit of this workspace.
 * `.root() -> Option<FsPath>`: Returns the workspace root path, if the root path
-  is recorded and can be resolved.
+  is recorded.
 
   This is optional because workspaces created before jj 0.38.0 did not record
-  workspace root paths, and a recorded path can also become stale if the
-  workspace directory is moved or deleted.
+  workspace root paths.
 
 ## Color labels
 
@@ -873,21 +875,21 @@ config, run:
 jj config list --include-defaults --include-overridden colors
 ```
 
-The default colors can be found in [`colors.toml`], and the default explicitly
-added labels (such as `mutable` or `divergent`) can be found in
-[`templates.toml`]. Labels that appear in `colors.toml` but that are not
-explicitly present in `templates.toml` will have been automatically added by
-`jj` (such as `author` or `change_id`).
+The default colors can be found in [`colors.toml`][colors.toml], and the default
+explicitly added labels (such as `mutable` or `divergent`) can be found in
+[`templates.toml`][templates.toml]. Labels that appear in `colors.toml` but that
+are not explicitly present in `templates.toml` will have been automatically
+added by `jj` (such as `author` or `change_id`).
 
 [config-colors]: config.md#custom-colors-and-styles
-[`colors.toml`]: https://github.com/jj-vcs/jj/blob/main/cli/src/config/colors.toml
-[`templates.toml`]: https://github.com/jj-vcs/jj/blob/main/cli/src/config/templates.toml
+[colors.toml]: https://github.com/jj-vcs/jj/blob/main/cli/src/config/colors.toml
+[templates.toml]: https://github.com/jj-vcs/jj/blob/main/cli/src/config/templates.toml
 
 ## Configuration
 
 The default templates and aliases() are defined in the `[templates]` and
 `[template-aliases]` sections of the config respectively. The exact definitions
-can be seen in the [`templates.toml`] file.
+can be seen in the [`templates.toml`][templates.toml] file.
 
 <!--- TODO: Find a way to embed the default config files in the docs -->
 
